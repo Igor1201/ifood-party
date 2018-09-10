@@ -84,41 +84,42 @@ async function getSingleGarnish(page, item) {
     });
 }
 
-async function fakeGetAllItems(url) {
-  return [
-    {
-      'id': '26362040',
-      'image': 'https://static-images.ifood.com.br/image/upload/f_auto,t_thumbnail/pratos/e0bf90d6-2690-40e8-ab06-4d130014ace3/201804201010_26362040.jpg',
-      'name': 'Fritas 🍟',
-      'description': 'Porção de fritas levemente salgada.',
-      'price': 10.3,
-    },
-    {
-      'id': '43893618',
-      'image': 'https://static-images.ifood.com.br/image/upload/f_auto,t_thumbnail/pratos/e0bf90d6-2690-40e8-ab06-4d130014ace3/201807041943_26417362.JPG',
-      'name': 'Single Bacon Burger (não vai queijo) 🍔🥓',
-      'description': '100% ANGUS BEEF - SEM CONSERVANTES - um hambúrguer 120g, pão de hambúrguer com gergelim, bacon e mais 13 molhos grátis a sua escolha',
-      'price': 21.9,
-    },
-  ];
-}
 
 async function getRestaurantData(url) {
   return getAllItems(url)
-    .then(async (allItems) => {
-      const browser = await puppeteer.launch(defaultConfig);
-      const page = await browser.newPage();
-      await page.goto(url, { waitUntil: 'networkidle0' });
-
-      const fullItems = Object.values(await workMyCollection((item) => getSingleGarnish(page, item), allItems));
-
-      await browser.close();
-
-      return fullItems;
-    });
+  .then(async (allItems) => {
+    const browser = await puppeteer.launch(defaultConfig);
+    const page = await browser.newPage();
+    await page.goto(url, { waitUntil: 'networkidle0' });
+    
+    const fullItems = Object.values(await workMyCollection((item) => getSingleGarnish(page, item), allItems));
+    
+    await browser.close();
+    
+    return fullItems;
+  });
 }
 
 getRestaurantData('https://www.ifood.com.br/delivery/sao-paulo-sp/now-burger-perdizes').then(a => console.log(JSON.stringify(a)));
+
+// async function fakeGetAllItems(url) {
+//   return [
+//     {
+//       'id': '26362040',
+//       'image': 'https://static-images.ifood.com.br/image/upload/f_auto,t_thumbnail/pratos/e0bf90d6-2690-40e8-ab06-4d130014ace3/201804201010_26362040.jpg',
+//       'name': 'Fritas 🍟',
+//       'description': 'Porção de fritas levemente salgada.',
+//       'price': 10.3,
+//     },
+//     {
+//       'id': '43893618',
+//       'image': 'https://static-images.ifood.com.br/image/upload/f_auto,t_thumbnail/pratos/e0bf90d6-2690-40e8-ab06-4d130014ace3/201807041943_26417362.JPG',
+//       'name': 'Single Bacon Burger (não vai queijo) 🍔🥓',
+//       'description': '100% ANGUS BEEF - SEM CONSERVANTES - um hambúrguer 120g, pão de hambúrguer com gergelim, bacon e mais 13 molhos grátis a sua escolha',
+//       'price': 21.9,
+//     },
+//   ];
+// }
 
 // getAllItems().then(console.log);
 
