@@ -12,9 +12,11 @@ async function workMyCollection(asyncFunc, arr) {
 
 async function nodeToItem(node) {
   return {
-    id: await node.$eval('input[name="code"]', (node) => node.value),
-    name: await node.$eval('input[name="description"]', (node) => node.value),
-    price: parseFloat(await node.$eval('input[name="unitPrice"]', (node) => node.value)),
+    id: await node.$eval('.result-text a[id*="item-"]', (node) => node.id.replace(/item-/, '')),
+    image: await node.$eval('.photo-item img', (node) => node.src).catch(() => undefined),
+    name: await node.$eval('.text-wrap h4', (node) => node.innerText.trim()),
+    description: await node.$eval('.text-wrap p', (node) => node.innerText.trim()).catch(() => undefined),
+    price: parseFloat(await node.$eval('.result-actions span', (node) => node.innerText.trim().match(/(\d+,\d+)$/)[1].replace(/,/, '.'))),
   }
 }
 
@@ -40,7 +42,7 @@ async function getAllItems() {
   const page = await browser.newPage();
   await page.goto('https://www.ifood.com.br/delivery/sao-paulo-sp/now-burger-perdizes');
   
-  const items = await page.$$('form[id*="form"]')
+  const items = await page.$$('.result')
     .then((nodes) => Promise.all(nodes.map(nodeToItem)));
 
   await browser.close();
@@ -53,10 +55,11 @@ async function click(page, selector) {
 }
 
 async function getSingleGarnish(page, item) {
-  console.log(`Getting single ${item.id}`);
   await click(page, `#item-${item.id}`);
   return page.waitFor('#garnish', { timeout: 2000 })
     .then(async () => {
+      await page.waitFor(500);
+
       const garnishes = await page.$$('div[id*="garnish-tab"]')
         .then((tabs) => Promise.all(tabs.map((tab) => tab.$$('li[class*="li-garnish"]'))))
         .then((tabs) => Promise.all(tabs.map((nodes) => Promise.all(nodes.map(nodeToGarnish)))));
@@ -72,17 +75,27 @@ async function getSingleGarnish(page, item) {
     });
 }
 
+async function getRestaurantData(url) {
+  return getAllItems()
+    .then(async (allItems) => {
+      const browser = await puppeteer.launch(defaultConfig);
+      const page = await browser.newPage();
+      await page.goto(url, { waitUntil: 'networkidle0' });
+
+      const fullItems = Object.values(await workMyCollection((item) => getSingleGarnish(page, item), allItems));
+
+      await browser.close();
+
+      return fullItems;
+    });
+}
+
+getRestaurantData('https://www.ifood.com.br/delivery/sao-paulo-sp/now-burger-perdizes').then(console.log);
+
 // getAllItems().then(console.log);
 
-getAllItems()
-  .then(async (allItems) => {
-    const browser = await puppeteer.launch(defaultConfig);
-    const page = await browser.newPage();
-    await page.goto('https://www.ifood.com.br/delivery/sao-paulo-sp/now-burger-perdizes', { waitUntil: 'networkidle0' });
+// (async () => {
+//   const data = require('./data.json');
 
-    const fullItems = await workMyCollection((item) => getSingleGarnish(page, item), allItems);
-
-    console.log(JSON.stringify(Object.values(fullItems)));
-
-    await browser.close();
-  });
+//   console.log(data.map((i) => `${i.id}, ${i.price}, ${i.name}`));
+// })();
