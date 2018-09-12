@@ -100,7 +100,14 @@ async function getRestaurantData(url) {
   });
 }
 
-getRestaurantData('https://www.ifood.com.br/delivery/sao-paulo-sp/now-burger-perdizes').then(a => console.log(JSON.stringify(a)));
+// getRestaurantData('https://www.ifood.com.br/delivery/sao-paulo-sp/now-burger-perdizes').then(a => console.log(JSON.stringify(a)));
+
+const express = require('express');
+const app = express();
+
+app.get('/', (req, res) => res.send(require('./data.json')));
+
+app.listen(3000, () => console.log('Example app listening on port 3000!'));
 
 // async function fakeGetAllItems(url) {
 //   return [
