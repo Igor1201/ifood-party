@@ -2,6 +2,8 @@ import 'dart:async';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:flutter/material.dart';
+import './restaurant.dart';
+import './section.dart';
 import './dish.dart';
 
 void main() => runApp(MyApp());
@@ -16,6 +18,17 @@ class MyApp extends StatelessWidget {
       ),
       home: App(),
     );
+  }
+}
+
+class SectionDisplay extends StatelessWidget {
+  final Section _section;
+
+  SectionDisplay(this._section);
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(_section.name);
   }
 }
 
@@ -86,11 +99,18 @@ class App extends StatelessWidget {
               child: Text('Error: ${snapshot.error.toString()}'),
             );
           }
+
+          List<Widget> items = snapshot.data.sections
+            .map((s) => <Widget>[SectionDisplay(s)]..addAll(s.dishes.map((d) => DishDisplay(d))))
+            .toList()
+            .expand((s) => s)
+            .toList();
+
           return ListView.separated(
             separatorBuilder: (BuildContext context, int index) => Divider(),
-            itemCount: snapshot.data.dishes.length,
+            itemCount: items.length,
             itemBuilder: (BuildContext context, int index) {
-              return DishDisplay(snapshot.data.dishes.elementAt(index));
+              return items.elementAt(index);
             },
           );
         },
