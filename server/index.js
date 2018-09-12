@@ -10,6 +10,13 @@ async function workMyCollection(asyncFunc, arr) {
   return final;
 }
 
+async function nodeToSection(node) {
+  return {
+    name: await node.$eval('a.headline h3', (node) => node.textContent.trim()),
+    dishes: await node.$$('.result').then((nodes) => Promise.all(nodes.map(nodeToDish))),
+  };
+}
+
 async function nodeToDish(node) {
   return {
     id: await node.$eval('.result-text a[id*="item-"]', (node) => node.id.replace(/item-/, '')),
@@ -17,14 +24,14 @@ async function nodeToDish(node) {
     name: await node.$eval('.text-wrap h4', (node) => node.innerText.trim()),
     description: await node.$eval('.text-wrap p', (node) => node.innerText.trim()).catch(() => undefined),
     price: parseFloat(await node.$eval('.result-actions span', (node) => node.innerText.trim().match(/(\d+,\d+)$/)[1].replace(/,/, '.'))),
-  }
+  };
 }
 
 async function nodeToGarnishOption(node) {
   return {
     id: await node.$eval('input.codeGarnishItemClass', (node) => node.value),
     name: await node.$eval('input[name="descriptionGarnishItem"]', (node) => node.value),
-  }
+  };
 }
 
 const defaultConfig = {
@@ -32,19 +39,18 @@ const defaultConfig = {
   devtools: true,
   userDataDir: '/tmp/data',
   args: [
-    '--disable-extensions-except=/Users/igor/Projects/ifood-party/uBlock0.chromium',
-    '--load-extension=/Users/igor/Projects/ifood-party/uBlock0.chromium',
+    '--disable-extensions-except=/Users/igor/Projects/ifood-party/server/uBlock0.chromium',
+    '--load-extension=/Users/igor/Projects/ifood-party/server/uBlock0.chromium',
   ],
 };
 
-async function getAllDishes(url) {
+async function getAllSections(url) {
   const browser = await puppeteer.launch(defaultConfig);
   const page = await browser.newPage();
   await page.goto(url);
-  
-  // TODO(igor): get .result[] of each .results-section
-  const items = await page.$$('.result')
-    .then((nodes) => Promise.all(nodes.map(nodeToDish)));
+
+  const items = await page.$$('.results-section')
+    .then((nodes) => Promise.all(nodes.map(nodeToSection)));
 
   await browser.close();
 
@@ -85,32 +91,39 @@ async function getSingleGarnish(page, item) {
     });
 }
 
+async function getSingleSection(page, section) {
+  return {
+    key: section.name,
+    value: {
+      ...section,
+      dishes: Object.values(await workMyCollection((item) => getSingleGarnish(page, item), section.dishes)),
+    },
+  };
+}
 
 async function getRestaurantData(url) {
-  return getAllDishes(url)
-  .then(async (allItems) => {
-    const browser = await puppeteer.launch(defaultConfig);
-    const page = await browser.newPage();
-    await page.goto(url, { waitUntil: 'networkidle0' });
-    
-    const dishes = Object.values(await workMyCollection((item) => getSingleGarnish(page, item), allItems));
-    
-    await browser.close();
-    
-    return { dishes };
-  });
+  return getAllSections(url)
+    .then(async (sections) => {
+      const browser = await puppeteer.launch(defaultConfig);
+      const page = await browser.newPage();
+      await page.goto(url, { waitUntil: 'networkidle0' });
+      
+      const newSections = Object.values(await workMyCollection((item) => getSingleSection(page, item), sections));
+      
+      await browser.close();
+      
+      return { sections: newSections };
+    });
 }
 
 // getRestaurantData('https://www.ifood.com.br/delivery/sao-paulo-sp/now-burger-perdizes').then(a => console.log(JSON.stringify(a)));
+// getAllSections('https://www.ifood.com.br/delivery/sao-paulo-sp/now-burger-perdizes').then(a => console.log(JSON.stringify(a)));
 
-const express = require('express');
-const app = express();
-
+const app = require('express')();
 app.get('/', (req, res) => res.send(require('./data.json')));
-
 app.listen(3000, () => console.log('Example app listening on port 3000!'));
 
-// async function fakeGetAllDishes(url) {
+// async function fakeGetAllSections(url) {
 //   return [
 //     {
 //       'id': '26362040',
@@ -128,8 +141,6 @@ app.listen(3000, () => console.log('Example app listening on port 3000!'));
 //     },
 //   ];
 // }
-
-// getAllDishes().then(console.log);
 
 // (async () => {
 //   const data = require('./data.json');
