@@ -37,14 +37,3 @@ Map<String, dynamic> _$DishToJson(Dish instance) {
   writeNotNull('garnishes', instance.garnishes);
   return val;
 }
-
-Restaurant _$RestaurantFromJson(Map<String, dynamic> json) {
-  return Restaurant()
-    ..dishes = (json['dishes'] as List)
-        ?.map(
-            (e) => e == null ? null : Dish.fromJson(e as Map<String, dynamic>))
-        ?.toList();
-}
-
-Map<String, dynamic> _$RestaurantToJson(Restaurant instance) =>
-    <String, dynamic>{'dishes': instance.dishes};

@@ -26,14 +26,3 @@ class Dish {
 
   Map<String, dynamic> toJson() => _$DishToJson(this);
 }
-
-@JsonSerializable()
-class Restaurant {
-  List<Dish> dishes;
-
-  Restaurant();
-
-  factory Restaurant.fromJson(Map<String, dynamic> json) => _$RestaurantFromJson(json);
-
-  Map<String, dynamic> toJson() => _$RestaurantToJson(this);
-}
