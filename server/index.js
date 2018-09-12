@@ -10,7 +10,7 @@ async function workMyCollection(asyncFunc, arr) {
   return final;
 }
 
-async function nodeToItem(node) {
+async function nodeToDish(node) {
   return {
     id: await node.$eval('.result-text a[id*="item-"]', (node) => node.id.replace(/item-/, '')),
     image: await node.$eval('.photo-item img', (node) => node.src).catch(() => undefined),
@@ -20,7 +20,7 @@ async function nodeToItem(node) {
   }
 }
 
-async function nodeToGarnish(node) {
+async function nodeToGarnishOption(node) {
   return {
     id: await node.$eval('input.codeGarnishItemClass', (node) => node.value),
     name: await node.$eval('input[name="descriptionGarnishItem"]', (node) => node.value),
@@ -37,13 +37,14 @@ const defaultConfig = {
   ],
 };
 
-async function getAllItems(url) {
+async function getAllDishes(url) {
   const browser = await puppeteer.launch(defaultConfig);
   const page = await browser.newPage();
   await page.goto(url);
   
+  // TODO(igor): get .result[] of each .results-section
   const items = await page.$$('.result')
-    .then((nodes) => Promise.all(nodes.map(nodeToItem)));
+    .then((nodes) => Promise.all(nodes.map(nodeToDish)));
 
   await browser.close();
 
@@ -58,7 +59,7 @@ async function getGarnishTab(tab) {
   return {
     min: await tab.$eval('[name="minGarnish"]', (node) => parseInt(node.value)),
     max: await tab.$eval('[name="maxGarnish"]', (node) => parseInt(node.value)),
-    options: await tab.$$('li[class*="li-garnish"]').then((nodes) => Promise.all(nodes.map(nodeToGarnish))),
+    options: await tab.$$('li[class*="li-garnish"]').then((nodes) => Promise.all(nodes.map(nodeToGarnishOption))),
   };
 }
 
@@ -86,17 +87,17 @@ async function getSingleGarnish(page, item) {
 
 
 async function getRestaurantData(url) {
-  return getAllItems(url)
+  return getAllDishes(url)
   .then(async (allItems) => {
     const browser = await puppeteer.launch(defaultConfig);
     const page = await browser.newPage();
     await page.goto(url, { waitUntil: 'networkidle0' });
     
-    const fullItems = Object.values(await workMyCollection((item) => getSingleGarnish(page, item), allItems));
+    const dishes = Object.values(await workMyCollection((item) => getSingleGarnish(page, item), allItems));
     
     await browser.close();
     
-    return fullItems;
+    return { dishes };
   });
 }
 
@@ -109,7 +110,7 @@ app.get('/', (req, res) => res.send(require('./data.json')));
 
 app.listen(3000, () => console.log('Example app listening on port 3000!'));
 
-// async function fakeGetAllItems(url) {
+// async function fakeGetAllDishes(url) {
 //   return [
 //     {
 //       'id': '26362040',
@@ -128,7 +129,7 @@ app.listen(3000, () => console.log('Example app listening on port 3000!'));
 //   ];
 // }
 
-// getAllItems().then(console.log);
+// getAllDishes().then(console.log);
 
 // (async () => {
 //   const data = require('./data.json');
