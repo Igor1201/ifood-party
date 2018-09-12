@@ -9,11 +9,16 @@ part of 'garnish.dart';
 GarnishOption _$GarnishOptionFromJson(Map<String, dynamic> json) {
   return GarnishOption()
     ..id = json['id'] as String
-    ..name = json['name'] as String;
+    ..name = json['name'] as String
+    ..price = (json['price'] as num).toDouble();
 }
 
 Map<String, dynamic> _$GarnishOptionToJson(GarnishOption instance) =>
-    <String, dynamic>{'id': instance.id, 'name': instance.name};
+    <String, dynamic>{
+      'id': instance.id,
+      'name': instance.name,
+      'price': instance.price
+    };
 
 Garnish _$GarnishFromJson(Map<String, dynamic> json) {
   return Garnish()

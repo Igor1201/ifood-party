@@ -16,7 +16,7 @@ class Dish {
   String description;
 
   @JsonKey(nullable: false)
-  double price = 0.0;
+  double price;
 
   List<Garnish> garnishes;
 

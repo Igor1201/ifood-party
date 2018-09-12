@@ -23,7 +23,7 @@ async function nodeToDish(node) {
     image: await node.$eval('.photo-item img', (node) => node.src).catch(() => undefined),
     name: await node.$eval('.text-wrap h4', (node) => node.innerText.trim()),
     description: await node.$eval('.text-wrap p', (node) => node.innerText.trim()).catch(() => undefined),
-    price: parseFloat(await node.$eval('.result-actions span', (node) => node.innerText.trim().match(/(\d+,\d+)$/)[1].replace(/,/, '.'))),
+    price: await node.$eval('.result-actions span', (node) => parseFloat(node.innerText.trim().match(/(\d+,\d+)$/)[1].replace(/,/, '.'))).catch(() => 0),
   };
 }
 
@@ -31,6 +31,7 @@ async function nodeToGarnishOption(node) {
   return {
     id: await node.$eval('input.codeGarnishItemClass', (node) => node.value),
     name: await node.$eval('input[name="descriptionGarnishItem"]', (node) => node.value),
+    price: await node.$eval('.price', (node) => parseFloat(node.innerText.trim().match(/(\d+,\d+)$/)[1].replace(/,/, '.'))).catch(() => 0),
   };
 }
 
@@ -126,18 +127,23 @@ app.listen(3000, () => console.log('Example app listening on port 3000!'));
 // async function fakeGetAllSections(url) {
 //   return [
 //     {
-//       'id': '26362040',
-//       'image': 'https://static-images.ifood.com.br/image/upload/f_auto,t_thumbnail/pratos/e0bf90d6-2690-40e8-ab06-4d130014ace3/201804201010_26362040.jpg',
-//       'name': 'Fritas 🍟',
-//       'description': 'Porção de fritas levemente salgada.',
-//       'price': 10.3,
-//     },
-//     {
-//       'id': '43893618',
-//       'image': 'https://static-images.ifood.com.br/image/upload/f_auto,t_thumbnail/pratos/e0bf90d6-2690-40e8-ab06-4d130014ace3/201807041943_26417362.JPG',
-//       'name': 'Single Bacon Burger (não vai queijo) 🍔🥓',
-//       'description': '100% ANGUS BEEF - SEM CONSERVANTES - um hambúrguer 120g, pão de hambúrguer com gergelim, bacon e mais 13 molhos grátis a sua escolha',
-//       'price': 21.9,
+//       name: 'fake',
+//       dishes: [
+//         {
+//           'id': '26362040',
+//           'image': 'https://static-images.ifood.com.br/image/upload/f_auto,t_thumbnail/pratos/e0bf90d6-2690-40e8-ab06-4d130014ace3/201804201010_26362040.jpg',
+//           'name': 'Fritas 🍟',
+//           'description': 'Porção de fritas levemente salgada.',
+//           'price': 10.3,
+//         },
+//         {
+//           'id': '43893618',
+//           'image': 'https://static-images.ifood.com.br/image/upload/f_auto,t_thumbnail/pratos/e0bf90d6-2690-40e8-ab06-4d130014ace3/201807041943_26417362.JPG',
+//           'name': 'Single Bacon Burger (não vai queijo) 🍔🥓',
+//           'description': '100% ANGUS BEEF - SEM CONSERVANTES - um hambúrguer 120g, pão de hambúrguer com gergelim, bacon e mais 13 molhos grátis a sua escolha',
+//           'price': 21.9,
+//         },
+//       ],
 //     },
 //   ];
 // }

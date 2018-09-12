@@ -10,6 +10,9 @@ class GarnishOption {
   @JsonKey(nullable: false)
   String name;
 
+  @JsonKey(nullable: false)
+  double price;
+
   GarnishOption();
 
   factory GarnishOption.fromJson(Map<String, dynamic> json) => _$GarnishOptionFromJson(json);
