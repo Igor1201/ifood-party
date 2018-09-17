@@ -22,6 +22,7 @@ Map<String, dynamic> _$GarnishOptionToJson(GarnishOption instance) =>
 
 Garnish _$GarnishFromJson(Map<String, dynamic> json) {
   return Garnish()
+    ..description = json['description'] as String
     ..min = json['min'] as int
     ..max = json['max'] as int
     ..options = (json['options'] as List)
@@ -29,8 +30,18 @@ Garnish _$GarnishFromJson(Map<String, dynamic> json) {
         .toList();
 }
 
-Map<String, dynamic> _$GarnishToJson(Garnish instance) => <String, dynamic>{
-      'min': instance.min,
-      'max': instance.max,
-      'options': instance.options
-    };
+Map<String, dynamic> _$GarnishToJson(Garnish instance) {
+  var val = <String, dynamic>{};
+
+  void writeNotNull(String key, dynamic value) {
+    if (value != null) {
+      val[key] = value;
+    }
+  }
+
+  writeNotNull('description', instance.description);
+  val['min'] = instance.min;
+  val['max'] = instance.max;
+  val['options'] = instance.options;
+  return val;
+}

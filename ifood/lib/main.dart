@@ -2,9 +2,10 @@ import 'dart:async';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:flutter/material.dart';
-import './restaurant.dart';
-import './section.dart';
-import './dish.dart';
+
+import 'data/restaurant.dart';
+import 'components/section_display.dart';
+import 'components/dish_display.dart';
 
 void main() => runApp(MyApp());
 
@@ -17,62 +18,6 @@ class MyApp extends StatelessWidget {
         primarySwatch: Colors.blue,
       ),
       home: App(),
-    );
-  }
-}
-
-class SectionDisplay extends StatelessWidget {
-  final Section _section;
-
-  SectionDisplay(this._section);
-
-  @override
-  Widget build(BuildContext context) {
-    return Text(_section.name);
-  }
-}
-
-class DishDisplay extends StatelessWidget {
-  final Dish _dish;
-
-  DishDisplay(this._dish);
-
-  @override
-  Widget build(BuildContext context) {
-    Widget image = _dish.image != null ?
-      Flexible(
-        child: Image.network(_dish.image),
-      ) : null;
-
-    return Padding(
-      padding: EdgeInsets.all(5.0),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          image,
-          Flexible(
-            flex: 4,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Text(
-                  _dish.name,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(fontWeight: FontWeight.bold),
-                ),
-                Text(
-                  _dish.description,
-                  maxLines: 3,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ],
-            ),
-          ),
-          Flexible(
-            child: Text('R\$ ${_dish.price}'),
-          ),
-        ]..removeWhere((w) => w == null),
-      ),
     );
   }
 }
@@ -101,7 +46,7 @@ class App extends StatelessWidget {
           }
 
           List<Widget> items = snapshot.data.sections
-            .map((s) => <Widget>[SectionDisplay(s)]..addAll(s.dishes.map((d) => DishDisplay(d))))
+            .map((s) => <Widget>[SectionDisplay(section: s)]..addAll(s.dishes.map((d) => DishDisplay(dish: d))))
             .toList()
             .expand((s) => s)
             .toList();

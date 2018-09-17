@@ -1,5 +1,5 @@
 import 'package:json_annotation/json_annotation.dart';
-import './garnish.dart';
+import 'garnish.dart';
 
 part 'dish.g.dart';
 

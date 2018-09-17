@@ -13,6 +13,8 @@ class GarnishOption {
   @JsonKey(nullable: false)
   double price;
 
+  bool isSelected;
+
   GarnishOption();
 
   factory GarnishOption.fromJson(Map<String, dynamic> json) => _$GarnishOptionFromJson(json);
@@ -22,6 +24,8 @@ class GarnishOption {
 
 @JsonSerializable(includeIfNull: false)
 class Garnish {
+  String description;
+
   @JsonKey(nullable: false)
   int min;
 
