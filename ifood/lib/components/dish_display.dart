@@ -2,7 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 
 import '../data/dish.dart';
-import 'garnish_display.dart';
+import '../screens/dish_screen.dart';
 
 class DishDisplay extends StatelessWidget {
   final Dish dish;
@@ -13,9 +13,7 @@ class DishDisplay extends StatelessWidget {
     if (dish.garnishes != null && dish.garnishes.length > 0) {
       Navigator.push<Dish>(context, MaterialPageRoute(
         builder: (BuildContext context) {
-          return GarnishesDisplay(
-            garnishes: dish.garnishes
-          );
+          return DishScreen(dish: dish);
         },
       )).then((Dish dish) {
         print(dish);
