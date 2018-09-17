@@ -64,6 +64,7 @@ async function click(page, selector) {
 
 async function getGarnishTab(tab) {
   return {
+    description: await tab.$eval('.headline-list', (node) => node.innerText.trim().split('\n')[0]).catch(() => undefined),
     min: await tab.$eval('[name="minGarnish"]', (node) => parseInt(node.value)),
     max: await tab.$eval('[name="maxGarnish"]', (node) => parseInt(node.value)),
     options: await tab.$$('li[class*="li-garnish"]').then((nodes) => Promise.all(nodes.map(nodeToGarnishOption))),
@@ -121,7 +122,7 @@ async function getRestaurantData(url) {
 // getAllSections('https://www.ifood.com.br/delivery/sao-paulo-sp/now-burger-perdizes').then(a => console.log(JSON.stringify(a)));
 
 const app = require('express')();
-app.get('/', (req, res) => res.send(require('./data.json')));
+app.get('/', (req, res) => res.send(require('./data2.json')));
 app.listen(3000, () => console.log('Example app listening on port 3000!'));
 
 // async function fakeGetAllSections(url) {
