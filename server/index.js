@@ -37,7 +37,7 @@ async function nodeToGarnishOption(node) {
 
 const defaultConfig = {
   executablePath: '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
-  devtools: true,
+  // devtools: true,
   userDataDir: '/tmp/data',
   args: [
     '--disable-extensions-except=/Users/igor/Projects/ifood-party/server/uBlock0.chromium',
@@ -64,6 +64,7 @@ async function click(page, selector) {
 
 async function getGarnishTab(tab) {
   return {
+    id: await tab.$eval('[name="codeGarnish"]', (node) => node.value),
     description: await tab.$eval('.headline-list', (node) => node.innerText.trim().split('\n')[0]).catch(() => undefined),
     min: await tab.$eval('[name="minGarnish"]', (node) => parseInt(node.value)),
     max: await tab.$eval('[name="maxGarnish"]', (node) => parseInt(node.value)),
@@ -118,8 +119,8 @@ async function getRestaurantData(url) {
     });
 }
 
+//// getAllSections('https://www.ifood.com.br/delivery/sao-paulo-sp/now-burger-perdizes').then(a => console.log(JSON.stringify(a)));
 // getRestaurantData('https://www.ifood.com.br/delivery/sao-paulo-sp/now-burger-perdizes').then(a => console.log(JSON.stringify(a)));
-// getAllSections('https://www.ifood.com.br/delivery/sao-paulo-sp/now-burger-perdizes').then(a => console.log(JSON.stringify(a)));
 
 const app = require('express')();
 app.get('/', (req, res) => res.send(require('./data2.json')));
