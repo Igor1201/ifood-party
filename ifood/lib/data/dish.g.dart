@@ -34,6 +34,7 @@ Map<String, dynamic> _$DishToJson(Dish instance) {
   val['name'] = instance.name;
   writeNotNull('description', instance.description);
   val['price'] = instance.price;
-  writeNotNull('garnishes', instance.garnishes);
+  writeNotNull('garnishes',
+      instance.garnishes == null ? null : _garnishesToJson(instance.garnishes));
   return val;
 }

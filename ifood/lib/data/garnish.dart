@@ -2,6 +2,8 @@ import 'package:json_annotation/json_annotation.dart';
 
 part 'garnish.g.dart';
 
+List _optionsToJson(List<GarnishOption> options) => options.map((o) => o.toJson()).toList();
+
 @JsonSerializable(includeIfNull: false)
 class GarnishOption {
   @JsonKey(nullable: false)
@@ -13,7 +15,8 @@ class GarnishOption {
   @JsonKey(nullable: false)
   double price;
 
-  bool isSelected;
+  @JsonKey(ignore: true)
+  bool isSelected = false;
 
   GarnishOption();
 
@@ -24,6 +27,9 @@ class GarnishOption {
 
 @JsonSerializable(includeIfNull: false)
 class Garnish {
+  @JsonKey(nullable: false)
+  String id;
+
   String description;
 
   @JsonKey(nullable: false)
@@ -32,7 +38,7 @@ class Garnish {
   @JsonKey(nullable: false)
   int max;
 
-  @JsonKey(nullable: false)
+  @JsonKey(nullable: false, toJson: _optionsToJson)
   List<GarnishOption> options;
 
   Garnish();

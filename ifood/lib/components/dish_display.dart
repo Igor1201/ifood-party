@@ -6,8 +6,9 @@ import '../screens/dish_screen.dart';
 
 class DishDisplay extends StatelessWidget {
   final Dish dish;
+  final Function onAddToCart;
 
-  DishDisplay({this.dish});
+  DishDisplay({this.dish, this.onAddToCart});
 
   Future<Null> _showGarnishesPanel(BuildContext context) async {
     if (dish.garnishes != null && dish.garnishes.length > 0) {
@@ -16,7 +17,7 @@ class DishDisplay extends StatelessWidget {
           return DishScreen(dish: dish);
         },
       )).then((Dish dish) {
-        print(dish);
+        onAddToCart(dish);
       });
     } else {
       

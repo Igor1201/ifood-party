@@ -3,6 +3,8 @@ import 'garnish.dart';
 
 part 'dish.g.dart';
 
+List _garnishesToJson(List<Garnish> garnishes) => garnishes.map((g) => g.toJson()).toList();
+
 @JsonSerializable(includeIfNull: false)
 class Dish {
   @JsonKey(nullable: false)
@@ -18,6 +20,7 @@ class Dish {
   @JsonKey(nullable: false)
   double price;
 
+  @JsonKey(toJson: _garnishesToJson)
   List<Garnish> garnishes;
 
   Dish();
