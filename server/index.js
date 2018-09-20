@@ -12,8 +12,9 @@ async function workMyCollection(asyncFunc, arr) {
 
 async function nodeToSection(node) {
   return {
-    name: await node.$eval('a.headline h3', (node) => node.textContent.trim()),
-    dishes: await node.$$('.result').then((nodes) => Promise.all(nodes.map(nodeToDish))),
+    id: await node.$eval('.results-section', (node) => node.id.replace(/nav-filter-/, '')),
+    name: await node.$eval('.results-section a.headline h3', (node) => node.textContent.trim()),
+    dishes: await node.$$('.results-section .result').then((nodes) => Promise.all(nodes.map(nodeToDish))),
   };
 }
 
@@ -37,7 +38,7 @@ async function nodeToGarnishOption(node) {
 
 const defaultConfig = {
   executablePath: '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
-  // devtools: true,
+  devtools: true,
   userDataDir: '/tmp/data',
   args: [
     '--disable-extensions-except=/Users/igor/Projects/ifood-party/server/uBlock0.chromium',
@@ -50,7 +51,7 @@ async function getAllSections(url) {
   const page = await browser.newPage();
   await page.goto(url);
 
-  const items = await page.$$('.results-section')
+  const items = await page.$$('#menuContent .info')
     .then((nodes) => Promise.all(nodes.map(nodeToSection)));
 
   await browser.close();
@@ -119,11 +120,11 @@ async function getRestaurantData(url) {
     });
 }
 
-//// getAllSections('https://www.ifood.com.br/delivery/sao-paulo-sp/now-burger-perdizes').then(a => console.log(JSON.stringify(a)));
+// // getAllSections('https://www.ifood.com.br/delivery/sao-paulo-sp/now-burger-perdizes').then(a => console.log(JSON.stringify(a)));
 // getRestaurantData('https://www.ifood.com.br/delivery/sao-paulo-sp/now-burger-perdizes').then(a => console.log(JSON.stringify(a)));
 
 const app = require('express')();
-app.get('/', (req, res) => res.send(require('./data2.json')));
+app.get('/', (req, res) => res.send(require('./data.json')));
 app.listen(3000, () => console.log('Example app listening on port 3000!'));
 
 // async function fakeGetAllSections(url) {
