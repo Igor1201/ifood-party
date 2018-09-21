@@ -13,7 +13,7 @@ InlineKeyboardMarkup restaurantMarkup(Restaurant restaurant) {
       .sections
       .map((s) => [InlineKeyboardButton(text: s.name, url: '', callback_data: fromSection(s.id).toString())])
       .toList()
-      ..add([InlineKeyboardButton(text: 'CANCEL', url: '', callback_data: cancel().toString())]);
+      ..add([InlineKeyboardButton(text: '❌ CANCEL', url: '', callback_data: cancel().toString())]);
 
   return InlineKeyboardMarkup(inline_keyboard: inlineKeyboard);
 }
@@ -32,7 +32,7 @@ InlineKeyboardMarkup sectionMarkup(Restaurant restaurant, JSONData data) {
       .dishes
       .map((d) => [InlineKeyboardButton(text: '${d.name} R\$${d.price}', url: '', callback_data: fromDish(restaurant, data.sectionId, d.id).toString())])
       .toList()
-      ..add([InlineKeyboardButton(text: 'CANCEL', url: '', callback_data: cancel().toString())]);
+      ..add([InlineKeyboardButton(text: '❌ CANCEL', url: '', callback_data: cancel().toString())]);
 
   return InlineKeyboardMarkup(inline_keyboard: inlineKeyboard);
 }
@@ -85,8 +85,8 @@ JSONData fromDish(Restaurant restaurant, String sectionId, String dishId) {
 
 InlineKeyboardMarkup dishMarkup(Restaurant restaurant, JSONData data) {
   List<InlineKeyboardButton> bottomButtons = [
-    InlineKeyboardButton(text: 'CANCEL', url: '', callback_data: cancel().toString()),
-    InlineKeyboardButton(text: data.garnishIndex + 1 >= data.garnishLength ? 'ADD TO CART >' : 'NEXT >', url: '', callback_data: nextGarnish(data).toString()),
+    InlineKeyboardButton(text: '❌ CANCEL', url: '', callback_data: cancel().toString()),
+    InlineKeyboardButton(text: data.garnishIndex + 1 >= data.garnishLength ? '🛒 ADD TO CART' : '➡️ NEXT', url: '', callback_data: nextGarnish(data).toString()),
   ];
 
   if (data.garnishLength == 0) {
@@ -124,7 +124,7 @@ void run() async {
   teledart
     .onCommand('start')
     .listen((message) {
-      print('Received command: ${message.message_id}');
+      print('Received command: ${message.message_id} from ${message.from.username}');
       teledart.replyMessage(message,
           'Welcome to *${restaurant.name}*!\nPlease select a section.',
           reply_markup: restaurantMarkup(restaurant),
@@ -140,7 +140,7 @@ void run() async {
   teledart
     .onCallbackQuery()
     .listen((query) async {
-      print('Received callback: ${query.data}');
+      print('Received callback: ${query.from.username} ${query.data}');
 
       JSONData data = JSONData.fromString(query.data);
       receivedData.add(data);
@@ -161,6 +161,22 @@ void run() async {
         } else if (data.type == 'B') {
           // buy
           print('!! CART: ${query.from.id} ${query.from.username} ${query.data}');
+
+          // List<String> ids = restaurant
+          //     .sections
+          //     .firstWhere((s) => s.id == data.sectionId)
+          //     .dishes
+          //     .firstWhere((d) => d.id == data.dishId)
+          //     .garnishes
+          //     .elementAt(0)
+          //     .options
+          //     .asMap()
+          //     .entries
+          //     .map((o) => data.selectedOptions[0] & (1 << o.key) != 0 ? o.value.id : null)
+          //     .where((s) => s != null)
+          //     .toList();
+          // print(ids);
+
           await teledart.editMessageText('Item was successfully added to cart!',
               chat_id: query.message.chat.id,
               message_id: query.message.message_id);
