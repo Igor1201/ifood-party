@@ -6,7 +6,7 @@ class JSONData {
   String dishId;
   int garnishIndex;
   int garnishLength;
-  List<List<int>> selectedOptions;
+  List<int> selectedOptions;
 
   JSONData({
     this.type,
@@ -36,7 +36,7 @@ class JSONData {
       dishId: m[3].isEmpty ? null : m[3],
       garnishIndex: m[4].isEmpty ? null : int.parse(m[4]),
       garnishLength: m[5].isEmpty ? null : int.parse(m[5]),
-      selectedOptions: List.from(json.decode(m[6])).map((l) => List.from<int>(l)).toList(),
+      selectedOptions: List.from<int>(json.decode(m[6])),
     );
   }
 

@@ -45,13 +45,13 @@ InlineKeyboardMarkup dishesMarkup(Restaurant restaurant, String sectionId) {
   return InlineKeyboardMarkup(inline_keyboard: inlineKeyboard);
 }
 
-JSONData toggleSelectedOption(JSONData data, int option) {
-  List<int> newGarnishOptions = data.selectedOptions[data.garnishIndex].contains(option) ?
-      data.selectedOptions[data.garnishIndex].where((o) => o != option).toList() :
-      data.selectedOptions[data.garnishIndex].followedBy([option]).toList();
+JSONData toggleSelectedOption(JSONData data, int optionIndex) {
+  int currentOptions = data.selectedOptions[data.garnishIndex];
+  // toggling optionIndex
+  currentOptions ^= 1 << optionIndex;
 
-  List<List<int>> newOptions = List.from(data.selectedOptions)
-      ..setAll(data.garnishIndex, [newGarnishOptions]);
+  List<int> newOptions = List.from(data.selectedOptions)
+      ..setAll(data.garnishIndex, [currentOptions]);
 
   return JSONData.clone(data)
     ..selectedOptions = newOptions;
@@ -78,7 +78,7 @@ JSONData fromDish(Restaurant restaurant, String sectionId, String dishId) {
     dishId: dishId,
     garnishIndex: 0,
     garnishLength: dish.garnishes.length,
-    selectedOptions: List.filled(dish.garnishes.length, []),
+    selectedOptions: List.filled(dish.garnishes.length, 0),
   );
 }
 
@@ -92,7 +92,7 @@ InlineKeyboardMarkup dishMarkup(Restaurant restaurant, JSONData data) {
       .options
       .asMap()
       .entries
-      .map((o) => [InlineKeyboardButton(text: '${data.selectedOptions[data.garnishIndex].contains(o.key) ? '☑️' : '🔲'} ${o.value.name}', url: '', callback_data: toggleSelectedOption(data, o.key).toString())])
+      .map((o) => [InlineKeyboardButton(text: '${(data.selectedOptions[data.garnishIndex] & (1 << o.key) != 0) ? '☑️' : '🔲'} ${o.value.name}', url: '', callback_data: toggleSelectedOption(data, o.key).toString())])
       .toList()
       ..add([InlineKeyboardButton(text: 'NEXT >', url: '', callback_data: nextGarnish(data).toString())]);
 
@@ -107,8 +107,6 @@ void run() async {
   teledart.startFetching();
 
   List<JSONData> receivedData = [];
-
-  97.toRadixString(2).runes.map((i) => i == 48 ? false : true)
 
   teledart
     .onCommand('a')
