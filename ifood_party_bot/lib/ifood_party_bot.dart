@@ -45,43 +45,57 @@ InlineKeyboardMarkup dishesMarkup(Restaurant restaurant, String sectionId) {
   return InlineKeyboardMarkup(inline_keyboard: inlineKeyboard);
 }
 
-JSONData toggleSelectedOption(JSONData data, String option) {
-  List<String> newOptions = data.selectedOptions.contains(option) ?
-      data.selectedOptions.where((o) => o != option).toList() :
-      data.selectedOptions.followedBy([option]).toList();
+JSONData toggleSelectedOption(JSONData data, int option) {
+  List<int> newGarnishOptions = data.selectedOptions[data.garnishIndex].contains(option) ?
+      data.selectedOptions[data.garnishIndex].where((o) => o != option).toList() :
+      data.selectedOptions[data.garnishIndex].followedBy([option]).toList();
+
+  List<List<int>> newOptions = List.from(data.selectedOptions)
+      ..setAll(data.garnishIndex, [newGarnishOptions]);
+
+  return JSONData.clone(data)
+    ..selectedOptions = newOptions;
+}
+
+JSONData nextGarnish(JSONData data) {
+  if (data.garnishIndex + 1 == data.garnishLength) {
+    return JSONData.clone(data)
+      ..type = 'B';
+  }
+  return JSONData.clone(data)
+    ..garnishIndex = data.garnishIndex + 1;
+}
+
+JSONData fromDish(Restaurant restaurant, String sectionId, String dishId) {
+  Dish dish = restaurant.sections
+      .firstWhere((s) => s.id == sectionId)
+      .dishes
+      .firstWhere((d) => d.id == dishId);
 
   return JSONData(
-    type: data.type,
-    sectionId: data.sectionId,
-    dishId: data.dishId,
-    garnishId: data.garnishId,
-    selectedOptions: newOptions,
+    type: 'G',
+    sectionId: sectionId,
+    dishId: dishId,
+    garnishIndex: 0,
+    garnishLength: dish.garnishes.length,
+    selectedOptions: List.filled(dish.garnishes.length, []),
   );
 }
 
-JSONData sampleGarnish() {
-  return JSONData.fromString('G_HL46_38178309_459I4_');
-}
-
-JSONData secondSampleGarnish() {
-  return JSONData.fromString('G_HL46_38178309_459I5_');
-}
-
-InlineKeyboardMarkup garnishMarkup(Restaurant restaurant, JSONData data) {
+InlineKeyboardMarkup dishMarkup(Restaurant restaurant, JSONData data) {
   List<List<InlineKeyboardButton>> inlineKeyboard = restaurant.sections
       .firstWhere((s) => s.id == data.sectionId)
       .dishes
       .firstWhere((d) => d.id == data.dishId)
       .garnishes
-      .firstWhere((g) => g.id == data.garnishId)
+      .elementAt(data.garnishIndex)
       .options
       .asMap()
       .entries
-      .map((o) => [InlineKeyboardButton(text: '${data.selectedOptions.contains(o.key.toString()) ? '[x]' : '[ ]'} ${o.value.name}', url: '', callback_data: toggleSelectedOption(data, o.key.toString()).toString())])
-      // .map((o) => [InlineKeyboardButton(text: '${data.selectedOptions.contains(o.id) ? '[x]' : '[ ]'} ${o.name}', url: '', callback_data: toggleSelectedOption(data, o.id).toString())])
+      .map((o) => [InlineKeyboardButton(text: '${data.selectedOptions[data.garnishIndex].contains(o.key) ? '☑️' : '🔲'} ${o.value.name}', url: '', callback_data: toggleSelectedOption(data, o.key).toString())])
       .toList()
-      ..add([InlineKeyboardButton(text: 'NEXT >', url: '', callback_data: JSONData(type: 'NG').toString())]);
-  
+      ..add([InlineKeyboardButton(text: 'NEXT >', url: '', callback_data: nextGarnish(data).toString())]);
+
   return InlineKeyboardMarkup(inline_keyboard: inlineKeyboard);
 }
 
@@ -92,14 +106,21 @@ void run() async {
 
   teledart.startFetching();
 
-  print(restaurant.name);
+  List<JSONData> receivedData = [];
+
+  97.toRadixString(2).runes.map((i) => i == 48 ? false : true)
 
   teledart
     .onCommand('a')
     .listen((message) {
       print('Received command: ${message.message_id}');
-      print(sampleGarnish());
-      teledart.replyMessage(message, 'Choose garnish options:', reply_markup: garnishMarkup(restaurant, sampleGarnish()));
+      teledart.replyMessage(message, 'Choose garnish options:', reply_markup: dishMarkup(restaurant, fromDish(restaurant, 'HL46', '38178309')));
+    });
+
+  teledart
+    .onCommand('show')
+    .listen((message) {
+      print(receivedData);
     });
 
   teledart
@@ -111,32 +132,27 @@ void run() async {
   teledart
     .onCallbackQuery()
     .listen((query) async {
-      print('Received callback: ${query.id} ${query.data}');
+      print('Received callback: ${query.data}');
 
       JSONData data = JSONData.fromString(query.data);
+      receivedData.add(data);
 
-      if (data.type == 'section') {
-        await teledart.editMessageText('Chose a dish:',
-            chat_id: query.message.chat.id,
-            message_id: query.message.message_id, 
-            reply_markup: dishesMarkup(restaurant, data.sectionId));
-      } else if (data.type == 'dish') {
-        await teledart.editMessageText('Chose a dish:',
-            chat_id: query.message.chat.id,
-            message_id: query.message.message_id, 
-            reply_markup: dishesMarkup(restaurant, data.dishId));
-      } else if (data.type == 'G') {
-        await teledart.editMessageText('blah',
-            chat_id: query.message.chat.id,
-            message_id: query.message.message_id, 
-            reply_markup: garnishMarkup(restaurant, data));
-      } else if (data.type == 'NG') {
-        await teledart.editMessageText('novo garnish',
-            chat_id: query.message.chat.id,
-            message_id: query.message.message_id, 
-            reply_markup: garnishMarkup(restaurant, secondSampleGarnish()));
+      try {
+        if (data.type == 'G') {
+          await teledart.editMessageText(query.data,
+              chat_id: query.message.chat.id,
+              message_id: query.message.message_id,
+              reply_markup: dishMarkup(restaurant, data));
+        } else if (data.type == 'B') {
+          print('!! CART: ${query.from.id} ${query.from.username} ${query.data}');
+          await teledart.editMessageText('Item was added to cart.',
+              chat_id: query.message.chat.id,
+              message_id: query.message.message_id);
+        }
+        await teledart.answerCallbackQuery(query, text: 'Done!');
+      } catch (e) {
+        print('Error: ${e}');
       }
 
-      await teledart.answerCallbackQuery(query, text: 'Done!');
     });
 }
