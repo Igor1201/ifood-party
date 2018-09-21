@@ -20,28 +20,36 @@ InlineKeyboardMarkup sectionsMarkup(Restaurant restaurant) {
 
   List<List<InlineKeyboardButton>> inlineKeyboard = restaurant.sections
       .map((s) => [InlineKeyboardButton(text: s.name, url: '', callback_data: makeData(s))])
-      .toList();
+      .toList()
+      ..add([InlineKeyboardButton(text: 'CANCEL', url: '', callback_data: cancel().toString())]);
   
   return InlineKeyboardMarkup(inline_keyboard: inlineKeyboard);
 }
 
-InlineKeyboardMarkup dishesMarkup(Restaurant restaurant, String sectionId) {
-  Function makeData = (Dish dish) => json.encode({
-    'type': 'garnish',
-    'sectionId': sectionId,
-    'dishId': dish.id,
-    'garnishId': dish.garnishes.isEmpty ? null : dish.garnishes[0].id,
-    'selectedOptions': [],
-  });
-
+InlineKeyboardMarkup restaurantMarkup(Restaurant restaurant) {
   List<List<InlineKeyboardButton>> inlineKeyboard = restaurant.sections
-      .firstWhere((s) => s.id == sectionId)
+      .map((s) => [InlineKeyboardButton(text: '${s.name}', url: '', callback_data: fromSection(s.id).toString())])
+      .toList()
+      ..add([InlineKeyboardButton(text: 'CANCEL', url: '', callback_data: cancel().toString())]);
+
+  return InlineKeyboardMarkup(inline_keyboard: inlineKeyboard);
+}
+
+JSONData fromSection(String sectionId) {
+  return JSONData(
+    type: 'S',
+    sectionId: sectionId,
+  );
+}
+
+InlineKeyboardMarkup sectionMarkup(Restaurant restaurant, JSONData data) {
+  List<List<InlineKeyboardButton>> inlineKeyboard = restaurant.sections
+      .firstWhere((s) => s.id == data.sectionId)
       .dishes
-      .map((d) {
-        return [InlineKeyboardButton(text: '${d.name} R\$${d.price}', url: '', callback_data: makeData(d))];
-      })
-      .toList();
-  
+      .map((d) => [InlineKeyboardButton(text: '${d.name} R\$${d.price}', url: '', callback_data: fromDish(restaurant, data.sectionId, d.id).toString())])
+      .toList()
+      ..add([InlineKeyboardButton(text: 'CANCEL', url: '', callback_data: cancel().toString())]);
+
   return InlineKeyboardMarkup(inline_keyboard: inlineKeyboard);
 }
 
@@ -58,12 +66,18 @@ JSONData toggleSelectedOption(JSONData data, int optionIndex) {
 }
 
 JSONData nextGarnish(JSONData data) {
-  if (data.garnishIndex + 1 == data.garnishLength) {
+  if (data.garnishIndex + 1 >= data.garnishLength) {
     return JSONData.clone(data)
       ..type = 'B';
   }
   return JSONData.clone(data)
     ..garnishIndex = data.garnishIndex + 1;
+}
+
+JSONData cancel() {
+  return JSONData(
+    type: 'C',
+  );
 }
 
 JSONData fromDish(Restaurant restaurant, String sectionId, String dishId) {
@@ -72,17 +86,30 @@ JSONData fromDish(Restaurant restaurant, String sectionId, String dishId) {
       .dishes
       .firstWhere((d) => d.id == dishId);
 
+  int garnishLength = dish.garnishes == null ? 0 : dish.garnishes.length;
+
   return JSONData(
     type: 'G',
     sectionId: sectionId,
     dishId: dishId,
     garnishIndex: 0,
-    garnishLength: dish.garnishes.length,
-    selectedOptions: List.filled(dish.garnishes.length, 0),
+    garnishLength: garnishLength,
+    selectedOptions: List.filled(garnishLength, 0),
   );
 }
 
 InlineKeyboardMarkup dishMarkup(Restaurant restaurant, JSONData data) {
+  List<InlineKeyboardButton> bottomButtons = [
+    InlineKeyboardButton(text: 'CANCEL', url: '', callback_data: cancel().toString()),
+    InlineKeyboardButton(text: data.garnishIndex + 1 >= data.garnishLength ? 'ADD TO CART >' : 'NEXT >', url: '', callback_data: nextGarnish(data).toString()),
+  ];
+
+  if (data.garnishLength == 0) {
+    return InlineKeyboardMarkup(
+      inline_keyboard: [bottomButtons],
+    );
+  }
+  
   List<List<InlineKeyboardButton>> inlineKeyboard = restaurant.sections
       .firstWhere((s) => s.id == data.sectionId)
       .dishes
@@ -94,7 +121,7 @@ InlineKeyboardMarkup dishMarkup(Restaurant restaurant, JSONData data) {
       .entries
       .map((o) => [InlineKeyboardButton(text: '${(data.selectedOptions[data.garnishIndex] & (1 << o.key) != 0) ? '☑️' : '🔲'} ${o.value.name}', url: '', callback_data: toggleSelectedOption(data, o.key).toString())])
       .toList()
-      ..add([InlineKeyboardButton(text: 'NEXT >', url: '', callback_data: nextGarnish(data).toString())]);
+      ..add(bottomButtons);
 
   return InlineKeyboardMarkup(inline_keyboard: inlineKeyboard);
 }
@@ -112,7 +139,9 @@ void run() async {
     .onCommand('a')
     .listen((message) {
       print('Received command: ${message.message_id}');
-      teledart.replyMessage(message, 'Choose garnish options:', reply_markup: dishMarkup(restaurant, fromDish(restaurant, 'HL46', '38178309')));
+      teledart.replyMessage(message, 'Choose section:', reply_markup: restaurantMarkup(restaurant));
+      // teledart.replyMessage(message, 'Choose dish:', reply_markup: sectionMarkup(restaurant, fromDish(restaurant, 'HL46', '38178309')));
+      // teledart.replyMessage(message, 'Choose garnish options:', reply_markup: dishMarkup(restaurant, fromDish(restaurant, 'HL46', '38178309')));
     });
 
   teledart
@@ -135,22 +164,35 @@ void run() async {
       JSONData data = JSONData.fromString(query.data);
       receivedData.add(data);
 
-      try {
-        if (data.type == 'G') {
+      // try {
+        if (data.type == 'S') {
+          // section
+          await teledart.editMessageText(query.data,
+              chat_id: query.message.chat.id,
+              message_id: query.message.message_id,
+              reply_markup: sectionMarkup(restaurant, data));
+        } else if (data.type == 'G') {
+          // garnish
           await teledart.editMessageText(query.data,
               chat_id: query.message.chat.id,
               message_id: query.message.message_id,
               reply_markup: dishMarkup(restaurant, data));
         } else if (data.type == 'B') {
+          // buy
           print('!! CART: ${query.from.id} ${query.from.username} ${query.data}');
           await teledart.editMessageText('Item was added to cart.',
               chat_id: query.message.chat.id,
               message_id: query.message.message_id);
+        } else if (data.type == 'C') {
+          // cancel
+          await teledart.editMessageText('Cancelled.',
+              chat_id: query.message.chat.id,
+              message_id: query.message.message_id);
         }
         await teledart.answerCallbackQuery(query, text: 'Done!');
-      } catch (e) {
-        print('Error: ${e}');
-      }
+      // } catch (e) {
+      //   print('Error: ${e}');
+      // }
 
     });
 }

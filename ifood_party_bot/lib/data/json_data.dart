@@ -36,7 +36,7 @@ class JSONData {
       dishId: m[3].isEmpty ? null : m[3],
       garnishIndex: m[4].isEmpty ? null : int.parse(m[4]),
       garnishLength: m[5].isEmpty ? null : int.parse(m[5]),
-      selectedOptions: List.from<int>(json.decode(m[6])),
+      selectedOptions: m[6].isEmpty ? null : List.from<int>(json.decode(m[6])),
     );
   }
 
