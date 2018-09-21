@@ -116,7 +116,10 @@ async function getRestaurantData(url) {
       
       await browser.close();
       
-      return { sections: newSections };
+      return {
+        name: await tab.$eval('.wrapper-info-header h1', (node) => node.innerText),
+        sections: newSections,
+      };
     });
 }
 

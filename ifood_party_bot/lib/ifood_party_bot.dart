@@ -6,29 +6,12 @@ import 'package:teledart/model.dart';
 import 'package:http/http.dart' as http;
 import 'package:ifood_party_bot/data/json_data.dart';
 import 'package:ifood_party_bot/data/restaurant.dart';
-import 'package:ifood_party_bot/data/section.dart';
 import 'package:ifood_party_bot/data/dish.dart';
-import 'package:ifood_party_bot/data/garnish.dart';
-
-InlineKeyboardButton a(String t) => InlineKeyboardButton(text: t, url: '', callback_data: 'data${t}');
-
-InlineKeyboardMarkup sectionsMarkup(Restaurant restaurant) {
-  Function makeData = (Section section) => json.encode({
-    'type': 'section',
-    'sectionId': section.id,
-  });
-
-  List<List<InlineKeyboardButton>> inlineKeyboard = restaurant.sections
-      .map((s) => [InlineKeyboardButton(text: s.name, url: '', callback_data: makeData(s))])
-      .toList()
-      ..add([InlineKeyboardButton(text: 'CANCEL', url: '', callback_data: cancel().toString())]);
-  
-  return InlineKeyboardMarkup(inline_keyboard: inlineKeyboard);
-}
 
 InlineKeyboardMarkup restaurantMarkup(Restaurant restaurant) {
-  List<List<InlineKeyboardButton>> inlineKeyboard = restaurant.sections
-      .map((s) => [InlineKeyboardButton(text: '${s.name}', url: '', callback_data: fromSection(s.id).toString())])
+  List<List<InlineKeyboardButton>> inlineKeyboard = restaurant
+      .sections
+      .map((s) => [InlineKeyboardButton(text: s.name, url: '', callback_data: fromSection(s.id).toString())])
       .toList()
       ..add([InlineKeyboardButton(text: 'CANCEL', url: '', callback_data: cancel().toString())]);
 
@@ -43,7 +26,8 @@ JSONData fromSection(String sectionId) {
 }
 
 InlineKeyboardMarkup sectionMarkup(Restaurant restaurant, JSONData data) {
-  List<List<InlineKeyboardButton>> inlineKeyboard = restaurant.sections
+  List<List<InlineKeyboardButton>> inlineKeyboard = restaurant
+      .sections
       .firstWhere((s) => s.id == data.sectionId)
       .dishes
       .map((d) => [InlineKeyboardButton(text: '${d.name} R\$${d.price}', url: '', callback_data: fromDish(restaurant, data.sectionId, d.id).toString())])
@@ -81,7 +65,8 @@ JSONData cancel() {
 }
 
 JSONData fromDish(Restaurant restaurant, String sectionId, String dishId) {
-  Dish dish = restaurant.sections
+  Dish dish = restaurant
+      .sections
       .firstWhere((s) => s.id == sectionId)
       .dishes
       .firstWhere((d) => d.id == dishId);
@@ -110,7 +95,8 @@ InlineKeyboardMarkup dishMarkup(Restaurant restaurant, JSONData data) {
     );
   }
   
-  List<List<InlineKeyboardButton>> inlineKeyboard = restaurant.sections
+  List<List<InlineKeyboardButton>> inlineKeyboard = restaurant
+      .sections
       .firstWhere((s) => s.id == data.sectionId)
       .dishes
       .firstWhere((d) => d.id == data.dishId)
@@ -136,25 +122,20 @@ void run() async {
   List<JSONData> receivedData = [];
 
   teledart
-    .onCommand('a')
+    .onCommand('start')
     .listen((message) {
       print('Received command: ${message.message_id}');
-      teledart.replyMessage(message, 'Choose section:', reply_markup: restaurantMarkup(restaurant));
-      // teledart.replyMessage(message, 'Choose dish:', reply_markup: sectionMarkup(restaurant, fromDish(restaurant, 'HL46', '38178309')));
-      // teledart.replyMessage(message, 'Choose garnish options:', reply_markup: dishMarkup(restaurant, fromDish(restaurant, 'HL46', '38178309')));
+      teledart.replyMessage(message,
+          'Welcome to *${restaurant.name}*!\nPlease select the section.',
+          reply_markup: restaurantMarkup(restaurant),
+          parse_mode: 'markdown');
     });
 
-  teledart
-    .onCommand('show')
-    .listen((message) {
-      print(receivedData);
-    });
-
-  teledart
-    .onMessage(keyword: '\/b_[0-9]+')
-    .listen((message) {
-      print('Received text: ${message.text}');
-    });
+  // teledart
+  //   .onMessage(keyword: '\/b_[0-9]+')
+  //   .listen((message) {
+  //     print('Received text: ${message.text}');
+  //   });
 
   teledart
     .onCallbackQuery()
@@ -164,7 +145,7 @@ void run() async {
       JSONData data = JSONData.fromString(query.data);
       receivedData.add(data);
 
-      // try {
+      try {
         if (data.type == 'S') {
           // section
           await teledart.editMessageText(query.data,
@@ -190,9 +171,9 @@ void run() async {
               message_id: query.message.message_id);
         }
         await teledart.answerCallbackQuery(query, text: 'Done!');
-      // } catch (e) {
-      //   print('Error: ${e}');
-      // }
+      } catch (e) {
+        print('Error: ${e}');
+      }
 
     });
 }
