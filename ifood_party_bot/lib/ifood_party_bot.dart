@@ -105,7 +105,7 @@ InlineKeyboardMarkup dishMarkup(Restaurant restaurant, JSONData data) {
       .options
       .asMap()
       .entries
-      .map((o) => [InlineKeyboardButton(text: '${(data.selectedOptions[data.garnishIndex] & (1 << o.key) != 0) ? '☑️' : '🔲'} ${o.value.name}', url: '', callback_data: toggleSelectedOption(data, o.key).toString())])
+      .map((o) => [InlineKeyboardButton(text: '${(data.selectedOptions[data.garnishIndex] & (1 << o.key) != 0) ? '☑️' : '🔲'} ${o.value.name} R\$${o.value.price}', url: '', callback_data: toggleSelectedOption(data, o.key).toString())])
       .toList()
       ..add(bottomButtons);
 
@@ -126,7 +126,7 @@ void run() async {
     .listen((message) {
       print('Received command: ${message.message_id}');
       teledart.replyMessage(message,
-          'Welcome to *${restaurant.name}*!\nPlease select the section.',
+          'Welcome to *${restaurant.name}*!\nPlease select a section.',
           reply_markup: restaurantMarkup(restaurant),
           parse_mode: 'markdown');
     });
@@ -161,7 +161,7 @@ void run() async {
         } else if (data.type == 'B') {
           // buy
           print('!! CART: ${query.from.id} ${query.from.username} ${query.data}');
-          await teledart.editMessageText('Item was added to cart.',
+          await teledart.editMessageText('Item was successfully added to cart!',
               chat_id: query.message.chat.id,
               message_id: query.message.message_id);
         } else if (data.type == 'C') {
