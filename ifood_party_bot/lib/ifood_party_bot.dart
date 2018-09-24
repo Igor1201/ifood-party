@@ -132,8 +132,11 @@ String jsonToAddToCart(Restaurant restaurant, JSONData data) {
             .asMap()
             .entries
             .forEach((o) {
-              o.value.isSelected = option.value & (1 << o.key) != 0;
-              amount += o.value.price;
+              bool selected = option.value & (1 << o.key) != 0;
+              o.value.isSelected = selected;
+              if (selected) {
+                amount += o.value.price;
+              }
             });
       });
 

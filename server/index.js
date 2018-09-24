@@ -126,17 +126,22 @@ async function getRestaurantData(url) {
       
       const newSections = Object.values(await workMyCollection((item) => getSingleSection(page, item), sections));
       
-      await browser.close();
-      
-      return {
-        name: await tab.$eval('.wrapper-info-header h1', (node) => node.innerText),
+      const data = {
+        name: await page.$eval('.wrapper-info-header h1', (node) => node.innerText.trim()),
         sections: newSections,
       };
+
+      await browser.close();
+
+      return data;
     });
 }
 
 // // getAllSections('https://www.ifood.com.br/delivery/sao-paulo-sp/now-burger-perdizes').then(a => console.log(JSON.stringify(a)));
-// getRestaurantData('https://www.ifood.com.br/delivery/sao-paulo-sp/now-burger-perdizes').then(a => console.log(JSON.stringify(a)));
+// (async () => {
+//   await getRestaurantData('https://www.ifood.com.br/delivery/sao-paulo-sp/now-burger-perdizes').then(a => console.log(JSON.stringify(a)));
+//   process.exit(0);
+// })();
 
 const express = require('express');
 const app = express();
@@ -205,7 +210,10 @@ async function addToCart(page, entry) {
 
   let index = 0;
   await reducePromises(async (options) => {
-    await reducePromises((option) => page.click(`.li-garnish-${option} .ico-plus`), options);
+    await reducePromises(async (option) => {
+      await page.click(`.li-garnish-${option}`).catch(() => {});
+      await page.click(`.li-garnish-${option} .ico-plus`).catch(() => {});
+    }, options);
     await page.click(`#btn_${index}`);
     index++;
     await page.waitFor(500);
