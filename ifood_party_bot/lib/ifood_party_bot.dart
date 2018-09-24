@@ -7,6 +7,7 @@ import 'package:http/http.dart' as http;
 import 'package:ifood_party_bot/data/json_data.dart';
 import 'package:ifood_party_bot/data/restaurant.dart';
 import 'package:ifood_party_bot/data/dish.dart';
+import 'package:ifood_party_bot/data/garnish.dart';
 
 InlineKeyboardMarkup restaurantMarkup(Restaurant restaurant) {
   List<List<InlineKeyboardButton>> inlineKeyboard = restaurant
@@ -112,12 +113,55 @@ InlineKeyboardMarkup dishMarkup(Restaurant restaurant, JSONData data) {
   return InlineKeyboardMarkup(inline_keyboard: inlineKeyboard);
 }
 
+String jsonToAddToCart(Restaurant restaurant, JSONData data) {
+  data.selectedOptions
+      .asMap()
+      .entries
+      .forEach((MapEntry<int, int> option) {
+        restaurant
+            .sections
+            .firstWhere((s) => s.id == data.sectionId)
+            .dishes
+            .firstWhere((d) => d.id == data.dishId)
+            .garnishes
+            .elementAt(option.key)
+            .options
+            .asMap()
+            .entries
+            .forEach((o) => o.value.isSelected = option.value & (1 << o.key) != 0);
+      });
+
+  List<List<String>> garnishes = restaurant
+      .sections
+      .firstWhere((s) => s.id == data.sectionId)
+      .dishes
+      .firstWhere((d) => d.id == data.dishId)
+      .garnishes
+      .map((Garnish g) {
+        return g.options
+            .where((o) => o.isSelected)
+            .map((o) => o.id)
+            .toList();
+      })
+      .toList();
+
+  return json.encode({
+    'dishId': data.dishId,
+    'garnishes': garnishes,
+  });
+}
+
 void run() async {
   Restaurant restaurant = await http.get('http://localhost:3000/')
       .then((response) => Restaurant.fromJson(json.decode(response.body)));
   TeleDart teledart = TeleDart(Telegram(Platform.environment['TELEGRAM_TOKEN']), Event());
 
   teledart.startFetching();
+
+  // JSONData data = JSONData.fromString('B_P35X_43893224_3/4_[352,0,0,2]');
+  // String entry = jsonToAddToCart(restaurant, data);
+  // await http.post('http://localhost:3000/cart', body: entry, headers: {'Content-type' : 'application/json'});
+  // exit(0);
 
   List<JSONData> receivedData = [];
 
@@ -162,20 +206,8 @@ void run() async {
           // buy
           print('!! CART: ${query.from.id} ${query.from.username} ${query.data}');
 
-          // List<String> ids = restaurant
-          //     .sections
-          //     .firstWhere((s) => s.id == data.sectionId)
-          //     .dishes
-          //     .firstWhere((d) => d.id == data.dishId)
-          //     .garnishes
-          //     .elementAt(0)
-          //     .options
-          //     .asMap()
-          //     .entries
-          //     .map((o) => data.selectedOptions[0] & (1 << o.key) != 0 ? o.value.id : null)
-          //     .where((s) => s != null)
-          //     .toList();
-          // print(ids);
+          String entry = jsonToAddToCart(restaurant, data);
+          await http.post('http://localhost:3000/cart', body: entry, headers: {'Content-type' : 'application/json'});
 
           await teledart.editMessageText('Item was successfully added to cart!',
               chat_id: query.message.chat.id,

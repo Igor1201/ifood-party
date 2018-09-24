@@ -10,6 +10,16 @@ async function workMyCollection(asyncFunc, arr) {
   return final;
 }
 
+async function reducePromises(asyncFunc, arr) {
+  let final = {};
+  await arr.reduce((promise, item) => {
+    return promise
+      .then(() => asyncFunc(item))
+      .catch(console.error);
+  }, Promise.resolve());
+  return final;
+}
+
 async function nodeToSection(node) {
   return {
     id: await node.$eval('.results-section', (node) => node.id.replace(/nav-filter-/, '')),
@@ -38,7 +48,9 @@ async function nodeToGarnishOption(node) {
 
 const defaultConfig = {
   executablePath: '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
-  devtools: true,
+  defaultViewport: null,
+  headless: false,
+  // devtools: true,
   userDataDir: '/tmp/data',
   args: [
     '--disable-extensions-except=/Users/igor/Projects/ifood-party/server/uBlock0.chromium',
@@ -126,9 +138,11 @@ async function getRestaurantData(url) {
 // // getAllSections('https://www.ifood.com.br/delivery/sao-paulo-sp/now-burger-perdizes').then(a => console.log(JSON.stringify(a)));
 // getRestaurantData('https://www.ifood.com.br/delivery/sao-paulo-sp/now-burger-perdizes').then(a => console.log(JSON.stringify(a)));
 
-const app = require('express')();
+const express = require('express');
+const app = express();
+const bodyParser = require('body-parser')
+app.use(bodyParser.json());
 app.get('/', (req, res) => res.send(require('./data.json')));
-app.listen(3000, () => console.log('Example app listening on port 3000!'));
 
 // async function fakeGetAllSections(url) {
 //   return [
@@ -159,3 +173,62 @@ app.listen(3000, () => console.log('Example app listening on port 3000!'));
 
 //   console.log(data.map((i) => `${i.id}, ${i.price}, ${i.name}`));
 // })();
+
+async function setUpAddToCart(cookies, url) {
+  const browser = await puppeteer.launch(defaultConfig);
+  const page = await browser.newPage();
+
+  cookies.forEach(async (c) => {
+    await page.setCookie({
+      name: c[0],
+      value: c[1],
+      domain: 'www.ifood.com.br',
+      path: '/',
+    });
+  });
+
+  await page.goto('https://www.ifood.com.br/minha-conta/enderecos', { waitUntil: 'networkidle0' });
+
+  await Promise.all([
+    page.waitForNavigation({ waitUntil: 'networkidle0' }),
+    page.click('[data-lid="13237266"]'),
+  ]);
+
+  await page.goto(url, { waitUntil: 'networkidle0' });
+
+  return page;
+};
+
+async function addToCart(page, entry) {
+  await page.click(`#item-${entry.dishId}`);
+  await page.waitFor(2000);
+
+  let index = 0;
+  await reducePromises(async (options) => {
+    await reducePromises((option) => page.click(`.li-garnish-${option} .ico-plus`), options);
+    await page.click(`#btn_${index}`);
+    index++;
+    await page.waitFor(500);
+  }, entry.garnishes);
+};
+
+const newQueue = require('async/queue');
+
+const cookies = process.env.IFOOD_COOKIE.split(/; ?/).map((c) => c.split('='));
+const url = 'https://www.ifood.com.br/delivery/sao-paulo-sp/now-burger-perdizes';
+
+(async () => {
+  const cartPage = await setUpAddToCart(cookies, url);
+  const q = newQueue(async (body, callback) => {
+    await addToCart(cartPage, body);
+    callback();
+  }, 1);
+
+  app.post('/cart', async (req, res) => {
+    q.push(req.body, () => {
+      res.send('{}');
+    });
+  });
+
+  app.listen(3000, () => console.log('Example app listening on port 3000!'));
+})();
