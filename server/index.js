@@ -213,6 +213,7 @@ async function addToCart(page, entry) {
 };
 
 const newQueue = require('async/queue');
+const requestMoney = require('./request-money.js');
 
 const cookies = process.env.IFOOD_COOKIE.split(/; ?/).map((c) => c.split('='));
 const url = 'https://www.ifood.com.br/delivery/sao-paulo-sp/now-burger-perdizes';
@@ -225,8 +226,10 @@ const url = 'https://www.ifood.com.br/delivery/sao-paulo-sp/now-burger-perdizes'
   }, 1);
 
   app.post('/cart', async (req, res) => {
-    q.push(req.body, () => {
-      res.send('{}');
+    q.push(req.body, async () => {
+      requestMoney(req.body.amount).then((moneyRequest) => {
+        res.send(JSON.stringify(moneyRequest));
+      });
     });
   });
 

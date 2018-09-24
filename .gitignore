@@ -109,3 +109,4 @@ typings/
 
 uBlock0.chromium/
 *.json
+secrets.sh

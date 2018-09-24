@@ -114,40 +114,46 @@ InlineKeyboardMarkup dishMarkup(Restaurant restaurant, JSONData data) {
 }
 
 String jsonToAddToCart(Restaurant restaurant, JSONData data) {
+  Dish dish = restaurant
+      .sections
+      .firstWhere((s) => s.id == data.sectionId)
+      .dishes
+      .firstWhere((d) => d.id == data.dishId);
+
+  double amount = dish.price + 2.0;
+
   data.selectedOptions
       .asMap()
       .entries
       .forEach((MapEntry<int, int> option) {
-        restaurant
-            .sections
-            .firstWhere((s) => s.id == data.sectionId)
-            .dishes
-            .firstWhere((d) => d.id == data.dishId)
-            .garnishes
+        dish.garnishes
             .elementAt(option.key)
             .options
             .asMap()
             .entries
-            .forEach((o) => o.value.isSelected = option.value & (1 << o.key) != 0);
+            .forEach((o) {
+              o.value.isSelected = option.value & (1 << o.key) != 0;
+              amount += o.value.price;
+            });
       });
 
-  List<List<String>> garnishes = restaurant
-      .sections
-      .firstWhere((s) => s.id == data.sectionId)
-      .dishes
-      .firstWhere((d) => d.id == data.dishId)
-      .garnishes
-      .map((Garnish g) {
-        return g.options
-            .where((o) => o.isSelected)
-            .map((o) => o.id)
-            .toList();
-      })
-      .toList();
+  List<List<String>> stringGarnishes = [];
+  if (dish.garnishes != null) {
+    stringGarnishes = dish
+        .garnishes
+        .map((Garnish g) {
+          return g.options
+              .where((o) => o.isSelected)
+              .map((o) => o.id)
+              .toList();
+        })
+        .toList();
+  }
 
   return json.encode({
     'dishId': data.dishId,
-    'garnishes': garnishes,
+    'garnishes': stringGarnishes,
+    'amount': amount,
   });
 }
 
@@ -207,9 +213,10 @@ void run() async {
           print('!! CART: ${query.from.id} ${query.from.username} ${query.data}');
 
           String entry = jsonToAddToCart(restaurant, data);
-          await http.post('http://localhost:3000/cart', body: entry, headers: {'Content-type' : 'application/json'});
+          http.Response response = await http.post('http://localhost:3000/cart', body: entry, headers: {'Content-type' : 'application/json'});
+          String url = json.decode(response.body)['url'];
 
-          await teledart.editMessageText('Item was successfully added to cart!',
+          await teledart.editMessageText('Item was successfully added to cart!\n${url}',
               chat_id: query.message.chat.id,
               message_id: query.message.message_id);
         } else if (data.type == 'C') {
