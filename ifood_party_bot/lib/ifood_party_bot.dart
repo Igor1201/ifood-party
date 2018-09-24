@@ -186,7 +186,7 @@ void run() async {
               chat_id: query.message.chat.id,
               message_id: query.message.message_id);
         }
-        await teledart.answerCallbackQuery(query, text: 'Done!');
+        //await teledart.answerCallbackQuery(query, text: 'Done!');
       } catch (e) {
         print('Error: ${e}');
       }
