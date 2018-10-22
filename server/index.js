@@ -242,4 +242,12 @@ const url = 'https://www.ifood.com.br/delivery/sao-paulo-sp/now-burger-perdizes'
   });
 
   app.listen(3000, () => console.log('Example app listening on port 3000!'));
+
+  while (true) {
+    await (async () => {
+      console.log('Refreshing page to avoid timeouts...');
+      await cartPage.reload({ waitUntil: 'networkidle0' });
+      await cartPage.waitFor(60000);
+    })().catch(() => undefined);
+  }
 })();
